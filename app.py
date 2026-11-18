@@ -14,7 +14,7 @@ def load_data():
 
 # show error if the file isn't there
 try:
-  df = load_data():
+  df = load_data()
 except FileNotFoundError:
   st.error('Could not find global_health_data.csv')
   st.stop()
@@ -25,9 +25,9 @@ df = df.drop_duplicates()
 df = df.dropna()
 df = df.sort_values(['Country', 'Date'])
 
-# data is cumulative so new per day = today minus yesterday
-df['New Cases'] = df.groupby('Country')['Confirmed']/dff().fillna(0)
-df['New Deaths'] = df.groupby('Country')['Deaths']/dff().fillna(0)
+# data is cumulative, so new per day = today minus yesterday
+df['New Cases'] = df.groupby('Country')['Confirmed'].diff().fillna(0)
+df['New Deaths'] = df.groupby('Country')['Deaths'].diff().fillna(0)
 
 # fatality rate
 df["Fatality Rate (%)"] = df['Deaths'] / df['Confirmed'] * 100
@@ -41,30 +41,35 @@ countries = st.sidebar.multiselect(
   max_selections=5
 )
 
-# need at least one country or theres nothing to show
-if lens(countries) == 0:
-  st.warning('please select at least one country.")
-  st.stop()
-
-# data slider
-start_date = df['date'].min().date()
-end_date = df['Date'].max().date()
-date_range = st.slider9
-  'select date range',
-  min_value=start_date,
-  max_value=end_date
-  value=start_date, end_date),
+metric = st.sidebar.radio(
+'Select a metric',
+[ 'Confirmed', 'Deaths', 'Fatality Rate (%)']
 )
 
-# filter by country and dates
+# need at least one country, or there's nothing to show
+if len(countries) == 0:
+  st.warning('please select at least one country.')
+  st.stop()
+
+# date slider
+start_date = df['Date'].min().date()
+end_date = df['Date'].max().date()
+date_range = st.slider(
+  'Select date range',
+  min_value=start_date,
+  max_value=end_date,
+  value=(start_date, end_date),
+)
+
+# Filter by country and dates
 filtered = df[df['Country'].isin(countries)]
 filtered = filtered[
-  (filtereed['Date'].dt.date >= date_range[0])
-  & (fitered['Data'].dt.date >= date_range[1])
+  (filtered['Date'].dt.date >= date_range[0])
+  & (filtered['Date'].dt.date <= date_range[1])
 ]
 
-if filtered.empty
- st.warning('no warning for the date range.')
+if filtered.empty:
+ st.warning('no data for the date range.')
  st.stop()
 
 # line chart
@@ -72,9 +77,9 @@ st.subheader('Trend over time')
 line_fig = px.line(
   filtered,
   x="Date",
-  y=metric
-  color='Country'
-  title=f"{metric} 'over time',
+  y=metric,
+  color='Country',
+  title=f"{metric} over time",
 
 )
 st.plotly_chart(line_fig)
@@ -83,41 +88,26 @@ st.plotly_chart(line_fig)
 col1, col2 = st.columns(2)
 
 with col1:
-  st.subheader('summary table")
+  st.subheader('summary table')
   # latest day only 
-  latest = df[df['Date'] == df['Date'].mac()]
-  latest = latest[latest['Country'].isin)countries)]
-  summary = latest[['country', metric]]
+  latest = df[df['Date'] == df['Date'].max()]
+  latest = latest[latest['Country'].isin(countries)]
+  summary = latest[['Country', metric]]
   summary = summary.sort_values(metric, ascending=False)
   st.dataframe(summary, hide_index=True)
 
 with col2:
   st.subheader('Comparative Analysis')
   # average new cases for the last 7 days
-  last_week = df[df['date'] > df['date'].max() - pd.Timedata(days=7)]
-  last_week = last_week[last_week['Country'}.isin(countries)]
-  avg = last_week.groupby('Country")['New Cases'].mean().resent_index()
-  bar_fig = px.bar
+  last_week = df[df['Date'] > df['Date'].max() - pd.Timedelta(days=7)]
+  last_week = last_week[last_week['Country'].isin(countries)]
+  avg = last_week.groupby('Country')['New Cases'].mean().reset_index()
+  bar_fig = px.bar(
     avg,
-    x='country',
-    y='new cases',
-    color='country',
-    title='average daily new cases (last seven days)',
+    x='Country',
+    y='New Cases',
+    color='Country',
+    title='Average daily new cases (last seven days)',
 
 )
 st.plotly_chart(bar_fig)
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
